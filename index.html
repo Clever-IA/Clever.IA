@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clever.IA - Asistente para la Escuela Santa Rita</title>
+    <!-- Carga de Tailwind CSS para un diseño responsivo y moderno --><script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carga de íconos Lucide para una interfaz limpia y profesional --><script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <!-- Fuente principal: Inter, para una legibilidad óptima --><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <!-- Bloque de Estilos CSS Personalizados para la interfaz de Chat --><style>
+        /* * ==========================================================
+         * 1. Definiciones de Variables y Tema
+         * ==========================================================
+         * Nuevas variables de color para un tema más moderno y vibrante.
+         */
+        :root {
+            --primary-color: 79, 70, 229; /* Indigo-600 para botones de usuario y resaltes */
+            --accent-color-1: 14, 165, 233; /* Sky-500 para asistente y toques futuristas */
+            --accent-color-2: 34, 211, 238; /* Cyan-400 para brillos y degradados */
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Fondo con un degradado sutil para mayor profundidad */
+            background: linear-gradient(to bottom right, #0F172A, #18253a); /* from-slate-900 to-slate-800 más oscuro */
+        }
+
+        /* * Contenedor principal del chat: 
+         * Diseño redondeado, fondo oscuro y un sutil efecto de "neón" (glow) 
+         * utilizando las nuevas variables de color.
+         */
+        #chat-container {
+            box-shadow: 
+                0 0 50px rgba(var(--accent-color-1), 0.15), /* Sombra Sky-Blue */
+                0 0 20px rgba(var(--accent-color-2), 0.25); /* Sombra Cyan */
+            border: 1px solid rgba(var(--accent-color-1), 0.3);
+            background: #1f2937; /* Slate-800 más oscuro */
+        }
+
+        /* * ==========================================================
+         * 2. Estilos de Burbujas de Mensaje y Perfiles
+         * ==========================================================
+         */
+
+        /* Estilo base para las burbujas del Asistente (fondo oscuro/gris) */
+        .assistant-bubble-container { display: flex; align-items: flex-start; }
+        .assistant-bubble {
+            background-color: #334155; /* Slate-700 */
+            border-bottom-left-radius: 0;
+            animation: fadeIn 0.3s ease-out;
+            border-left: 3px solid rgb(var(--accent-color-1)); /* Resalte SKY-BLUE */
+        }
+
+        /* Estilo para las listas dentro del contenido del asistente */
+        .assistant-bubble ul { list-style-type: disc; margin-left: 20px; padding-left: 5px; margin-top: 5px; }
+        .assistant-bubble li { margin-bottom: 5px; }
+
+
+        /* Estilo base para las burbujas del Usuario (fondo Indigo fuerte) */
+        .user-bubble-container { display: flex; justify-content: flex-end; align-items: flex-start; }
+        .user-bubble {
+            background-color: #4f46e5; /* Indigo-600 */
+            border-bottom-right-radius: 0;
+            animation: fadeIn 0.3s ease-out;
+            border-right: 3px solid rgb(var(--primary-color)); /* Resalte INDIGO */
+        }
+
+        /* Foto de perfil del asistente: borde SKY-BLUE */
+        .profile-pic {
+            width: 40px; height: 40px; min-width: 40px; border-radius: 50%;
+            background: #1f2937; /* Slate-800 */
+            border: 2px solid rgb(var(--accent-color-1)); /* Sky-500 */
+            padding: 4px; margin-right: 10px; 
+            box-shadow: 0 0 8px rgba(var(--accent-color-1), 0.5);
+        }
+
+        /* Foto de perfil del usuario: borde y fondo INDIGO */
+        .user-profile-pic {
+            width: 40px; height: 40px; min-width: 40px; border-radius: 50%;
+            background: #4f46e5; /* Indigo-600 */
+            border: 2px solid rgb(var(--primary-color)); /* Indigo-600 */
+            padding: 4px; margin-left: 10px; 
+            box-shadow: 0 0 8px rgba(var(--primary-color), 0.5);
+        }
+        
+        /* Estilo para el ícono del encabezado */
+        .header-profile-pic { width: 36px; height: 36px; min-width: 36px; padding: 3px; }
+
+        /* * ==========================================================
+         * 3. Animaciones y Usabilidad
+         * ==========================================================
+         */
+
+        /* Animación de carga (Typing Indicator) - Puntos SKY-BLUE */
+        .typing-indicator span {
+            display: inline-block; width: 8px; height: 8px;
+            background-color: rgb(var(--accent-color-1)); /* Sky-500 */
+            border-radius: 50%; margin: 0 2px;
+            animation: bounce 0.6s infinite alternate;
+        }
+
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-5px); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Asegura el desplazamiento en el historial de chat */
+        #chat-log {
+            overflow-y: auto;
+            /* Altura calculada para ocupar el espacio restante en dispositivos grandes */
+            max-height: calc(100vh - 16rem); 
+        }
+
+        /* Ajuste de altura para móviles (responsividad) */
+        @media (min-width: 640px) {
+            #chat-log {
+                max-height: calc(100vh - 12rem);
+            }
+        }
+
+        /* Efecto visual al botón de enviar (glow) */
+        #send-button {
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 0 10px rgba(var(--primary-color), 0.5);
+        }
+        #send-button:hover {
+            box-shadow: 
+                0 0 15px rgba(var(--primary-color), 0.8), 
+                0 0 20px rgba(var(--accent-color-1), 0.4); /* Combina con Sky-Blue */
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 flex flex-col items-center">
+
+    <!-- Contenedor Principal (Límites y Responsive) --><div id="chat-container" class="w-full max-w-4xl h-[95vh] sm:h-[90vh] md:h-[90vh] lg:h-[90vh] rounded-2xl flex flex-col p-4 sm:p-6">
+        
+        <!-- ENCABEZADO: Título y Branding del Asistente --><header class="text-center pb-4 border-b border-gray-700/50 mb-4">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-wider flex items-center justify-center">
+                <!-- Icono del Asistente (Custom SVG) --><div class="header-profile-pic rounded-full mr-3 border-2 border-sky-400 p-1 bg-gray-900 shadow-md shadow-sky-500/30">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full text-sky-400">
+                        <path d="M12 18V21M7 21H17M4 11V15M20 11V15M7 7H17M17 7C17 4.79086 15.2091 3 13 3H11C8.79086 3 7 4.79086 7 7M7 7V11M17 11V7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M7 11L17 11M7 11C7 11 8 13 12 13C16 13 17 11 17 11M3 13L12 17L21 13M3 13V15.5C3 16.3284 3.67157 17 4.5 17H19.5C20.3284 17 21 16.3284 21 15.5V13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    </svg>
+                </div>
+                Clever.IA
+            </h1>
+            <p class="text-gray-400/80 text-sm mt-1">Tu asistente virtual: Escuela Santa Rita</p>
+        </header>
+
+        <!-- ZONA DE CHAT: Contenedor de mensajes y scroll automático --><div id="chat-log" class="flex-grow space-y-4 pr-2">
+            <!-- Mensaje de bienvenida inicial (presentación completa) --><div class="assistant-bubble-container">
+                <div class="profile-pic flex items-center justify-center">
+                    <!-- Ícono del Bot (se define en JS, pero aquí se muestra por primera vez) --><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full text-sky-400">
+                        <path d="M12 18V21M7 21H17M4 11V15M20 11V15M7 7H17M17 7C17 4.79086 15.2091 3 13 3H11C8.79086 3 7 4.79086 7 7M7 7V11M17 11V7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M7 11L17 11M7 11C7 11 8 13 12 13C16 13 17 11 17 11M3 13L12 17L21 13M3 13V15.5C3 16.3284 3.67157 17 4.5 17H19.5C20.3284 17 21 16.3284 21 15.5V13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    </svg>
+                </div>
+                <div class="assistant-bubble max-w-[80%] md:max-w-[70%] p-3 rounded-xl text-gray-100 shadow-md">
+                    <p class="text-sm font-semibold text-sky-300 mb-1">Clever.IA</p>
+                    <!-- Mensaje de presentación completo --><p class="text-base">¡Hola! Soy Clever.IA, tu asistente en línea de la Escuela Santa Rita. Estoy programado para ayudarte con todas tus dudas sobre horarios, inscripciones, cupos y más. ¿En qué puedo asistirte?</p>
+                </div>
+            </div>
+            <!-- Los mensajes generados dinámicamente se insertarán aquí por JavaScript --></div>
+
+        <!-- BARRA DE ENTRADA: Formulario para enviar mensajes --><form id="chat-form" class="mt-4 pt-4 border-t border-gray-700/50 flex space-x-3 items-center">
+            <input 
+                type="text" 
+                id="message-input" 
+                placeholder="Escribe tu consulta sobre la escuela aquí..."
+                class="flex-grow p-3 rounded-full bg-slate-700 text-white border border-transparent focus:outline-none focus:ring-2 focus:ring-cyan-500 transition duration-200 placeholder-gray-400 text-sm"
+                autocomplete="off"
+            >
+            <button 
+                type="submit" 
+                id="send-button"
+                class="bg-sky-600 hover:bg-sky-700 text-white p-3 rounded-full flex items-center justify-center transition duration-200 disabled:opacity-50"
+                aria-label="Enviar mensaje"
+            >
+                <i data-lucide="send" class="w-5 h-5"></i>
+            </button>
+        </form>
+
+    </div>
+
+    <!-- Bloque de Lógica JavaScript --><script type="module">
+        // Inicializa todos los íconos de Lucide
+        lucide.createIcons();
+
+        // ==========================================================
+        // CONFIGURACIÓN DE ENDPOINT Y SEGURIDAD
+        // ==========================================================
+        /* Clave de API para autenticación con el servicio de IA. 
+           (Esta clave está expuesta en el frontend y debe ser protegida en un entorno de producción.) */
+        const GEMINI_API_KEY = "AIzaSyDLv0JrV87YPPx6E9ZcWz_cj0eCz32cfOA"; 
+        
+        /* URL del endpoint del servicio de IA, usando un modelo optimizado para chat. */
+        const API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=';
+        // ==========================================================
+
+
+        // Referencias a los elementos del DOM (Document Object Model)
+        const chatLog = document.getElementById('chat-log');
+        const chatForm = document.getElementById('chat-form');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+
+        let typingIndicatorElement = null; // Variable para controlar el indicador de 'escribiendo'
+        
+        /**
+         * Genera el bloque HTML/SVG para la imagen de perfil del Asistente.
+         * Esto asegura la consistencia visual y la reutilización del código.
+         */
+        function getAssistantProfileSVG() {
+            return `
+                <div class="profile-pic flex items-center justify-center">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-full h-full text-sky-400">
+                        <path d="M12 18V21M7 21H17M4 11V15M20 11V15M7 7H17M17 7C17 4.79086 15.2091 3 13 3H11C8.79086 3 7 4.79086 7 7M7 7V11M17 11V7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M7 11L17 11M7 11C7 11 8 13 12 13C16 13 17 11 17 11M3 13L12 17L21 13M3 13V15.5C3 16.3284 3.67157 17 4.5 17H19.5C20.3284 17 21 16.3284 21 15.5V13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                    </svg>
+                </div>
+            `;
+        }
+
+        /**
+         * Genera el bloque HTML/SVG para la imagen de perfil del Usuario.
+         */
+        function getUserProfileSVG() {
+            return `
+                <div class="user-profile-pic flex items-center justify-center">
+                    <!-- Icono Lucide 'User' para representar al usuario (color blanco) --><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-full h-full text-white">
+                        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </div>
+            `;
+        }
+
+
+        /**
+         * Función central para añadir un nuevo mensaje al historial de chat.
+         * Controla el formato (burbuja de usuario o de asistente) y el scroll.
+         * @param {string} message - Contenido del mensaje.
+         * @param {string} sender - 'user' o 'assistant'.
+         */
+        function addMessage(message, sender) {
+            const messageWrapper = document.createElement('div');
+            
+            if (sender === 'user') {
+                // Mensaje de usuario (Indigo), alineado a la derecha
+                messageWrapper.className = `user-bubble-container`; 
+                const bubbleContent = `<p>${message}</p>`;
+
+                messageWrapper.innerHTML = `
+                    <div class="user-bubble max-w-[80%] md:max-w-[70%] p-3 rounded-xl text-gray-100 shadow-xl text-base">
+                        ${bubbleContent}
+                    </div>
+                    ${getUserProfileSVG()}
+                `;
+
+            } else {
+                // Mensaje del asistente (Gris), alineado a la izquierda
+                messageWrapper.className = `assistant-bubble-container`; 
+
+                const bubbleContent = `
+                    <p class="text-sm font-semibold text-sky-300 mb-1">Clever.IA</p>
+                    <p class="text-base">${message}</p>
+                `;
+
+                messageWrapper.innerHTML = `
+                    ${getAssistantProfileSVG()}
+                    <div class="assistant-bubble max-w-[80%] md:max-w-[70%] p-3 rounded-xl text-gray-100 shadow-md">
+                        ${bubbleContent}
+                    </div>
+                `;
+            }
+
+            chatLog.appendChild(messageWrapper);
+            scrollToBottom();
+        }
+
+        /**
+         * Crea y muestra la animación de tres puntos que indica que el asistente está 'escribiendo'.
+         */
+        function showTypingIndicator() {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'assistant-bubble-container';
+            wrapper.id = 'typing-indicator';
+            
+            const bubbleContent = `
+                <p class="text-sm font-semibold text-sky-300 mb-1">Clever.IA</p>
+                <div class="typing-indicator flex items-center space-x-1">
+                    <span></span><span></span><span></span>
+                </div>
+            `;
+
+            wrapper.innerHTML = `
+                ${getAssistantProfileSVG()}
+                <div class="assistant-bubble max-w-[80%] md:max-w-[70%] p-3 rounded-xl text-gray-100 shadow-md">
+                    ${bubbleContent}
+                </div>
+            `;
+
+            chatLog.appendChild(wrapper);
+
+            typingIndicatorElement = wrapper;
+            scrollToBottom();
+            return wrapper;
+        }
+
+        /**
+         * Elimina el elemento de la animación de escritura una vez que la respuesta ha sido recibida.
+         */
+        function removeTypingIndicator() {
+            if (typingIndicatorElement) {
+                typingIndicatorElement.remove();
+                typingIndicatorElement = null;
+            }
+        }
+
+        /**
+         * Asegura que el historial de chat siempre se desplace hasta el último mensaje.
+         */
+        function scrollToBottom() {
+            setTimeout(() => {
+                chatLog.scrollTop = chatLog.scrollHeight;
+            }, 50); 
+        }
+
+        /**
+         * Lógica principal para procesar la consulta del usuario.
+         * Envía la petición al endpoint de la IA y gestiona la respuesta/errores.
+         * @param {string} userText - El mensaje de entrada del usuario.
+         */
+        async function handleGeminiResponse(userText) {
+            
+            // 1. Control de UI antes de la llamada: Mostrar indicador y deshabilitar entrada
+            showTypingIndicator();
+            sendButton.disabled = true;
+
+            // 2. Definición de la Personalidad y Contexto del Asistente (Clever.IA)
+            const systemPrompt = `Eres un asistente virtual web llamado "Clever.IA", diseñado específicamente para la Escuela Básica Nacional Santa Rita, ubicada en la Avenida 3, Urbanización Viviendas Venezolanas, Sector El Caño, Parroquia Santa Rita, Municipio Santa Rita, Estado Zulia, Venezuela. Tu propósito principal es proporcionar atención automatizada a representantes (padres, tutores o familiares de estudiantes), respondiendo de manera rápida, precisa y amable a consultas sobre la escuela. Ayudas a optimizar el proceso de información, reduciendo la necesidad de visitas presenciales y ahorrando tiempo tanto para los representantes como para el personal administrativo.
+Contexto de la Escuela:
+La Escuela Básica Nacional Santa Rita es una institución educativa pública de dependencia nacional, financiada por el gobierno venezolano, que ofrece educación básica gratuita para promover la igualdad de oportunidades.
+Es uno de los colegios con mayor matrícula escolar en el municipio, lo que genera alta demanda de información.
+Ubicación geográfica: Limita al norte con Calle Las Brisas, al sur con Av. 2B Santa Rita, al este con Callejón Perozo, y al oeste con Calle E San Benito.
+Reseña histórica breve: El sector Viviendas Venezolanas fue fundado en 1959 durante el gobierno de Rómulo Betancourt y completado en 1966 bajo Raúl Leoni. El municipio Santa Rita fue fundado en 1790 y se convirtió en autónomo en 1989, con una rica herencia indígena arawak y colonial.
+Temas que puedes manejar:
+Disponibilidad de cupos: Informa sobre vacantes por grado, pero siempre recomienda contactar a la secretaría para confirmación oficial.
+Requisitos para inscripción: Lista documentos necesarios (ej. partida de nacimiento, cédula del representante, notas anteriores, etc.), pero aclara que los requisitos pueden variar y se deben verificar en persona.
+Horarios de clases: Proporciona horarios generales (ej. turno matutino de 7:00 AM a 12:00 PM, vespertino de 1:00 PM a 5:00 PM), adaptados a la educación básica.
+Útiles escolares: Sugiere listas básicas por grado (cuadernos, lápices, libros de texto proporcionados por el gobierno, etc.), enfatizando materiales reutilizables y económicos.
+Áreas de aprendizaje: Describe las materias principales (matemáticas, lenguaje, ciencias, educación física, etc.) y cualquier programa especial si aplica.
+Otras consultas comunes: Información general sobre la escuela (misión
