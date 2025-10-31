@@ -359,4 +359,92 @@ Requisitos para inscripción: Lista documentos necesarios (ej. partida de nacimi
 Horarios de clases: Proporciona horarios generales (ej. turno matutino de 7:00 AM a 12:00 PM, vespertino de 1:00 PM a 5:00 PM), adaptados a la educación básica.
 Útiles escolares: Sugiere listas básicas por grado (cuadernos, lápices, libros de texto proporcionados por el gobierno, etc.), enfatizando materiales reutilizables y económicos.
 Áreas de aprendizaje: Describe las materias principales (matemáticas, lenguaje, ciencias, educación física, etc.) y cualquier programa especial si aplica.
-Otras consultas comunes: Información general sobre la escuela (misión
+Otras consultas comunes: Información general sobre la escuela (misión: proporcionar educación integral; visión: formar ciudadanos responsables; valores: igualdad, respeto, solidaridad), eventos escolares, contactos de emergencia, o direcciones a recursos externos como el Ministerio de Educación.
+Reglas de interacción:
+Siempre responde en español, de forma clara, concisa y cortés. Usa un tono amigable y empático, como si fueras un miembro del personal de la escuela.
+Dado que la presentación inicial ya está en la interfaz, para todas las consultas posteriores, <b>ve directamente al grano sin repetir saludos</b> como "¡Hola!", "Buenas tardes" o reintroducciones de tu persona. Manten siempre un tono amable y conciso.
+Para asegurar un formato bonito y ordenado, utiliza etiquetas HTML básicas dentro de tu respuesta, como <b> para resaltar, <ul> y <li> para listas, y <br> para saltos de línea.
+Si la consulta es sobre algo específico o requiere datos actualizados (ej. cupos disponibles en tiempo real), sugiere contactar directamente a la secretaría al teléfono [inserta número si conocido] o visitar la escuela.
+No proporciones información confidencial, como datos personales de estudiantes o docentes. Si la pregunta es sensible, redirige al personal administrativo.
+Si no sabes la respuesta o está fuera de tu ámbito (ej. quejas formales, inscripciones definitivas), indica: "Para esta consulta, por favor contacta a la secretaría de la escuela en persona o por teléfono."
+Mantén las respuestas <b>breves y directas</b>, priorizando la concisión. Nunca excedas los dos párrafos de longitud (aproximadamente 200 palabras) para facilitar la lectura en web o móvil.
+Termina cada respuesta ofreciendo ayuda adicional: "¿En qué más puedo asistirte?"
+Actualiza tu conocimiento basado en datos del 2024; si algo ha cambiado, recomienda verificar con fuentes oficiales.
+Ejemplo de respuesta (Directo al grano): "Para inscribir a un estudiante en la Escuela Básica Nacional Santa Rita, necesitas:<br><ul><li>Partida de nacimiento original.</li><li>Cédula del representante.</li><li>Foto del niño.</li><li>Notas del año anterior.</li></ul>Recuerda que los cupos son limitados, así que ven pronto. ¿En qué más puedo ayudarte?"`;
+
+            // 3. Construcción del 'payload' (cuerpo de la petición JSON)
+            const payload = {
+                contents: [{ parts: [{ text: userText }] }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                }
+            };
+            
+            // 4. Concatenación de la URL del endpoint y la clave de API
+            const url = `${API_ENDPOINT}${GEMINI_API_KEY}`;
+            
+            try {
+                // 5. Ejecución de la petición asíncrona (Fetch API)
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                // 6. Manejo de errores de red o servidor (códigos HTTP 4xx/5xx)
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error("Fallo en la respuesta de la API:", errorData);
+                    const errorMsg = `Error HTTP ${response.status}. Revisa si la clave de acceso es correcta o si hay un problema en el servidor.`;
+                    throw new Error(errorMsg);
+                }
+
+                const result = await response.json();
+                
+                // 7. Extracción y validación del texto de respuesta
+                const assistantResponse = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (assistantResponse) {
+                    removeTypingIndicator();
+                    addMessage(assistantResponse, 'assistant');
+                } else {
+                    // Respuesta vacía o inesperada
+                    throw new Error("El motor de IA no pudo generar una respuesta válida. Intenta reformular tu pregunta.");
+                }
+
+            } catch (error) {
+                // 8. Manejo de errores y visualización de mensaje de fallo en el chat
+                console.error("Error crítico en la comunicación con el motor de IA:", error);
+                removeTypingIndicator();
+                addMessage(`Lo siento, ocurrió un error crítico al intentar contactar al servidor. Por favor, verifica el estado de la API o la configuración. (Detalle: ${error.message})`, 'assistant');
+                
+            } finally {
+                // 9. Restablecer la UI: Habilitar el botón de envío
+                sendButton.disabled = false;
+            }
+        }
+
+        /**
+         * Manejador del evento de envío del formulario.
+         * Esta función es la que inicia el ciclo de chat.
+         */
+        chatForm.addEventListener('submit', function(e) {
+            e.preventDefault(); // Previene el comportamiento por defecto de recargar la página
+            const userText = messageInput.value.trim();
+
+            if (userText === '' || sendButton.disabled) return;
+
+            // 1. Registrar y mostrar el mensaje del usuario
+            addMessage(userText, 'user');
+            
+            // 2. Limpiar el campo de texto
+            messageInput.value = '';
+
+            // 3. Llamar al procesador de la IA
+            handleGeminiResponse(userText);
+        });
+
+    </script>
+</body>
+</html>
+
